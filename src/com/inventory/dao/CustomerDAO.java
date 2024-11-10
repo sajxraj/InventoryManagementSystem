@@ -41,18 +41,24 @@ public class CustomerDAO {
      * Refactoring name: RENAME VARIABLE
      * Changed variable name from query => findCustomersByNameLocationAndPhone
      */
+
+    // used prepared statement to avoid sql injections, added logging instead of print stack trace for better error handling
      public void addCustomerDAO(CustomerDTO customerdto) {
-        try{
-                String findCustomersByNameLocationAndPhone = "SELECT * FROM customers WHERE fullname='"+customerdto.getFullName()+"' AND location='"+customerdto.getLocation()+"' AND phone='"+customerdto.getPhone()+"'";
-                rs=stmt.executeQuery(findCustomersByNameLocationAndPhone);
-                if(rs.next()){
-                    JOptionPane.showMessageDialog(null,"Same Customer has already been added!");
-                }else{
-                    addFunction(customerdto);
+        String checkCustomerQuery = "SELECT * FROM customers WHERE fullname=? AND location=? AND phone=?";
+        try(PreparedStatement stmt = con.prepareStatement(checkCustomerQuery)){
+            pstmt.setString(1, customerDTO.getFullName());
+            pstmt.setString(2, customerDTO.getLocation());
+            pstmt.setString(3, customerDTO.getPhone());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    LOGGER.log(Level.WARNING, "Customer already exists.");
+                } else {
+                    insertCustomer(customerDTO);
                 }
-        }catch(Exception e){
-                e.printStackTrace();
-        }           
+            }
+        }catch(SQLException e){
+            LOGGER.log(Level.SEVERE, "Error adding customer.", e);
+        }
     }//end of method addCustomerDTO
 
     /***
